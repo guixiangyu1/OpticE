@@ -255,9 +255,9 @@ class KGEModel(nn.Module):
         phase_h = head / (self.embedding_range.item() / pi)
         phase_t = tail / (self.embedding_range.item() / pi)
 
-        # r1, r2 = torch.chunk(phase_r, 2, dim=2)
-        hr = phase_h + phase_r
-        tr = phase_t
+        r1, r2 = torch.chunk(phase_r, 2, dim=2)
+        hr = phase_h + r1
+        tr = phase_t + r2
 
         hr = hr % (2 * pi)
         tr = tr % (2 * pi)
