@@ -283,7 +283,7 @@ def main(args):
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     else:
         logging.info('Ramdomly Initializing %s Model...' % args.model)
-        init_step = 0
+        init_step = 1
 
     step = init_step
 
