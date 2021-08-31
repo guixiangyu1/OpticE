@@ -269,6 +269,23 @@ class KGEModel(nn.Module):
         score = self.gamma.item() - mass.sum(dim=2) * self.modulus
         return score
 
+    def Ellipse(self, head, relation, tail, mode):
+        pi = 3.14159262358979323846
+        phase_r = relation / (self.embedding_range.item() / pi)
+        phase_h = head / (self.embedding_range.item() / pi)
+        phase_t = tail / (self.embedding_range.item() / pi)
+
+        r1, r2 = torch.chunk(phase_r, 2, dim=2)
+        hr = phase_h + r1
+        tr = phase_t + r2
+
+        x = torch.sin(hr)
+        y = torch.cos(tr) * 1.414
+
+        xy = x ** 2 + y ** 2 + 2 * x * y * torch.cos(hr - tr)
+        score = self.gamma.item() - xy.sum(dim=2) * self.modulus
+        return score
+
     @staticmethod
     def train_step(model, optimizer, train_iterator, args):
         '''
