@@ -271,6 +271,26 @@ class KGEModel(nn.Module):
         score = self.gamma.item() - mass.sum(dim=2) * self.modulus
         return score
 
+    # def Ellipse(self, head, relation, tail, mode):
+    #     pi = 3.14159262358979323846
+    #     phase_r = relation / (self.embedding_range.item() / pi)
+    #     phase_h = head / (self.embedding_range.item() / pi)
+    #     phase_t = tail / (self.embedding_range.item() / pi)
+    #
+    #     r1, r2 = torch.chunk(phase_r, 2, dim=2)
+    #     hr = phase_h + r1
+    #     tr = phase_t + r2
+    #
+    #     x = (torch.sin(hr) ** 2 + 4 * torch.cos(hr) ** 2)
+    #     y = (torch.sin(tr) ** 2 + 4 * torch.cos(tr) ** 2)
+    #     #
+    #     # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
+    #     # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
+    #
+    #     xy = x + y - 2 * torch.sqrt(x * y) * torch.cos(hr - tr)
+    #     score = self.gamma.item() - xy.sum(dim=2) * 0.0025
+    #     return score
+
     def Ellipse(self, head, relation, tail, mode):
         pi = 3.14159262358979323846
         phase_r = relation / (self.embedding_range.item() / pi)
@@ -281,14 +301,37 @@ class KGEModel(nn.Module):
         hr = phase_h + r1
         tr = phase_t + r2
 
-        x = (torch.sin(hr) ** 2 + 4 * torch.cos(hr) ** 2)
-        y = (torch.sin(tr) ** 2 + 4 * torch.cos(tr) ** 2)
+        x = 2 + torch.cos(hr)
+        y = 2 + torch.cos(tr)
         #
         # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
-        xy = x + y - 2 * torch.sqrt(x * y) * torch.cos(hr - tr)
-        score = self.gamma.item() - xy.sum(dim=2) * 0.0025
+        xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(hr - tr)
+        score = self.gamma.item() - xy.sum(dim=2) * self.modulus
+        return score
+
+    def pEllipse(self, head, relation, tail, mode):
+        pi = 3.14159262358979323846
+        phase_r = relation / (self.embedding_range.item() / pi)
+        h = head / (self.embedding_range.item() / pi)
+        t = tail / (self.embedding_range.item() / pi)
+
+        phase_h, polar_h = torch.chunk(h, 2, dim=2)
+        phase_t, polar_t = torch.chunk(t, 2, dim=2)
+
+        r1, r2 = torch.chunk(phase_r, 2, dim=2)
+        hr = phase_h + r1
+        tr = phase_t + r2
+
+        x = (torch.sin(hr) ** 2 + 12 * torch.cos(hr) ** 2)
+        y = (torch.sin(tr) ** 2 + 12 * torch.cos(tr) ** 2)
+        #
+        # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
+        # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
+
+        xy = x + y - 2 * torch.sqrt(x * y) * torch.cos(hr - tr) * (torch.sin(polar_h - polar_t)).abs()
+        score = self.gamma.item() - xy.sum(dim=2) * self.modulus
         return score
 
     @staticmethod
