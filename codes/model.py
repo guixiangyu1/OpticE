@@ -281,8 +281,11 @@ class KGEModel(nn.Module):
         hr = phase_h + r1
         tr = phase_t + r2
 
-        x = (torch.sin(hr) ** 2 + 4 * torch.cos(hr) ** 2)
-        y = (torch.sin(tr) ** 2 + 4 * torch.cos(tr) ** 2)
+        # x = (torch.sin(hr) ** 2 + 4 * torch.cos(hr) ** 2)
+        # y = (torch.sin(tr) ** 2 + 4 * torch.cos(tr) ** 2)
+
+        x = 1 / (1 - 0.1 * torch.cos(hr))
+        y = 1 / (1 - 0.1 * torch.cos(tr))
 
         xy = x + y - 2 * torch.sqrt(x * y) * torch.cos(hr - tr)
         score = self.gamma.item() - xy.sum(dim=2) * self.modulus
