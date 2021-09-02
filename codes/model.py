@@ -301,14 +301,14 @@ class KGEModel(nn.Module):
         hr = phase_h + r1
         tr = phase_t + r2
 
-        x = 1 + torch.cos(hr) * 0.9
-        y = 1 + torch.cos(tr) * 0.9
+        x = 1 + (torch.cos(2 * hr)) * 0.9
+        y = 1 + (torch.cos(2 * tr)) * 0.9
         #
         # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
-        xy = x ** 2 + y ** 2 + 2 * x * y * torch.cos(hr - tr)
-        score = -self.gamma.item() + xy.sum(dim=2) * self.modulus
+        xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(hr - tr)
+        score = self.gamma.item() - xy.sum(dim=2) * self.modulus
         return score
 
     def pEllipse(self, head, relation, tail, mode):
