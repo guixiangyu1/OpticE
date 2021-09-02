@@ -330,8 +330,8 @@ class KGEModel(nn.Module):
 
         xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(hr - tr)
         a = x * torch.cos(hr) - y * torch.cos(tr)
-        b = x * torch.sin(hr) - y * torch.cos(tr)
-        score = torch.stack([a,b], dim=0)
+        b = x * torch.sin(hr) - y * torch.sin(tr)
+        score = torch.stack([a, b], dim=0)
         score = score.norm(dim=0)
         score = self.gamma.item() - xy.sum(dim=2) * self.modulus
         return score
