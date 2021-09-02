@@ -308,7 +308,7 @@ class KGEModel(nn.Module):
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
         xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(hr - tr)
-        score = self.gamma.item() - xy.sum(dim=2) * self.modulus
+        score = -self.gamma.item() + xy.sum(dim=2) * self.modulus
         return score
 
     def pEllipse(self, head, relation, tail, mode):
