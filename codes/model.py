@@ -61,7 +61,7 @@ class KGEModel(nn.Module):
         self.modulus = nn.Parameter(torch.Tensor([[0.5 * self.embedding_range.item()]]))
 
         # Do not forget to modify this line when you add a new model in the "forward" function
-        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'Ring', 'Ellipse']:
+        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'Ring', 'Ellipse', 'Ellipse_sqrd']:
             raise ValueError('model %s not supported' % model_name)
 
         if model_name == 'RotatE' and (not double_entity_embedding or double_relation_embedding):
@@ -156,7 +156,8 @@ class KGEModel(nn.Module):
             'RotatE': self.RotatE,
             'pRotatE': self.pRotatE,
             'Ring': self.Ring,
-            'Ellipse': self.Ellipse
+            'Ellipse': self.Ellipse,
+            'Ellipse_sqrd': self.Ellipse_sqrd
         }
 
         if self.model_name in model_func:
@@ -308,6 +309,30 @@ class KGEModel(nn.Module):
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
         xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(hr - tr)
+        score = self.gamma.item() - xy.sum(dim=2) * self.modulus
+        return score
+
+    def Ellipse_sqrd(self, head, relation, tail, mode):
+        pi = 3.14159262358979323846
+        phase_r = relation / (self.embedding_range.item() / pi)
+        phase_h = head / (self.embedding_range.item() / pi)
+        phase_t = tail / (self.embedding_range.item() / pi)
+
+        r1, r2 = torch.chunk(phase_r, 2, dim=2)
+        hr = phase_h + r1
+        tr = phase_t + r2
+
+        x = 1 + (torch.cos(hr)) * 0.9
+        y = 1 + (torch.cos(tr)) * 0.9
+        #
+        # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
+        # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
+
+        xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(hr - tr)
+        a = x * torch.cos(hr) - y * torch.cos(tr)
+        b = x * torch.sin(hr) - y * torch.cos(tr)
+        score = torch.stack([a,b], dim=0)
+        score = score.norm(dim=0)
         score = self.gamma.item() - xy.sum(dim=2) * self.modulus
         return score
 
