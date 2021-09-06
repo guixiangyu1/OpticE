@@ -41,7 +41,7 @@ class KGEModel(nn.Module):
 
         self.entity_dim = hidden_dim * 2 if double_entity_embedding else hidden_dim
         self.relation_dim = hidden_dim * 2 if double_relation_embedding else hidden_dim
-        if model_name == 'Ellipse3':
+        if model_name == 'Ellipse3' or model_name == 'Ellipse3_sqrt':
             self.relation_dim = hidden_dim * 3
 
         self.entity_embedding = nn.Parameter(torch.zeros(nentity, self.entity_dim))
