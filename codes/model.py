@@ -63,7 +63,7 @@ class KGEModel(nn.Module):
         self.modulus = nn.Parameter(torch.Tensor([[0.5 * self.embedding_range.item()]]))
 
         # Do not forget to modify this line when you add a new model in the "forward" function
-        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'Ring', 'Ellipse', 'Ellipse3_sqrd',
+        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'Ring', 'Ellipse', 'Ellipse3_sqrt',
                               'Ellipse3']:
             raise ValueError('model %s not supported' % model_name)
 
@@ -161,7 +161,7 @@ class KGEModel(nn.Module):
             'Ring': self.Ring,
             'Ellipse': self.Ellipse,
             'Ellipse3': self.Ellipse3,
-            'Ellipse3_sqrd': self.Ellipse3_sqrd
+            'Ellipse3_sqrt': self.Ellipse3_sqrt
         }
 
         if self.model_name in model_func:
@@ -336,7 +336,7 @@ class KGEModel(nn.Module):
         score = self.gamma.item() - xy.sum(dim=2) * 0.008
         return score
 
-    def Ellipse3_sqrd(self, head, relation, tail, mode):
+    def Ellipse3_sqrt(self, head, relation, tail, mode):
         pi = 3.14159262358979323846
         phase_r = relation / (self.embedding_range.item() / pi)
         phase_h = head / (self.embedding_range.item() / pi)
