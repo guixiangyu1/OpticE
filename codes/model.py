@@ -302,8 +302,8 @@ class KGEModel(nn.Module):
         hr = phase_h + r1
         tr = phase_t + r2
 
-        x = 1 + (torch.cos(0.5 * hr)) * 0.9
-        y = 1 + (torch.cos(0.5 * tr)) * 0.9
+        x = 1 + (torch.cos(hr)) * 0.9
+        y = 1 + (torch.cos(tr)) * 0.9
         #
         # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
@@ -328,12 +328,12 @@ class KGEModel(nn.Module):
         # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
-        xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(hr - tr)
+        # xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(hr - tr)
         a = x * torch.cos(hr) - y * torch.cos(tr)
         b = x * torch.sin(hr) - y * torch.sin(tr)
         score = torch.stack([a, b], dim=0)
         score = score.norm(dim=0)
-        score = self.gamma.item() - xy.sum(dim=2) * self.modulus
+        score = self.gamma.item() - score.sum(dim=2) * self.modulus
         return score
 
     def pEllipse(self, head, relation, tail, mode):
