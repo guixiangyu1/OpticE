@@ -41,6 +41,8 @@ class KGEModel(nn.Module):
 
         self.entity_dim = hidden_dim * 2 if double_entity_embedding else hidden_dim
         self.relation_dim = hidden_dim * 2 if double_relation_embedding else hidden_dim
+        if model_name == 'Ellipse3':
+            self.relation_dim = hidden_dim * 3
 
         self.entity_embedding = nn.Parameter(torch.zeros(nentity, self.entity_dim))
         nn.init.uniform_(
@@ -61,7 +63,8 @@ class KGEModel(nn.Module):
         self.modulus = nn.Parameter(torch.Tensor([[0.5 * self.embedding_range.item()]]))
 
         # Do not forget to modify this line when you add a new model in the "forward" function
-        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'Ring', 'Ellipse', 'Ellipse_sqrd']:
+        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'Ring', 'Ellipse', 'Ellipse_sqrd',
+                              'Ellipse3']:
             raise ValueError('model %s not supported' % model_name)
 
         if model_name == 'RotatE' and (not double_entity_embedding or double_relation_embedding):
@@ -157,6 +160,7 @@ class KGEModel(nn.Module):
             'pRotatE': self.pRotatE,
             'Ring': self.Ring,
             'Ellipse': self.Ellipse,
+            'Ellipse3': self.Ellipse3,
             'Ellipse_sqrd': self.Ellipse_sqrd
         }
 
@@ -309,6 +313,26 @@ class KGEModel(nn.Module):
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
         xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(hr - tr)
+        score = self.gamma.item() - xy.sum(dim=2) * self.modulus
+        return score
+
+    def Ellipse3(self, head, relation, tail, mode):
+        pi = 3.14159262358979323846
+        phase_r = relation / (self.embedding_range.item() / pi)
+        phase_h = head / (self.embedding_range.item() / pi)
+        phase_t = tail / (self.embedding_range.item() / pi)
+
+        r1, r2, r3 = torch.chunk(phase_r, 3, dim=2)
+        hr = phase_h.detach() + r1
+        tr = phase_t.detach() + r2
+
+        x = 1 + (torch.cos(hr)) * 0.1
+        y = 1 + (torch.cos(tr)) * 0.1
+        #
+        # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
+        # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
+
+        xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(phase_h + r3 - phase_t)
         score = self.gamma.item() - xy.sum(dim=2) * self.modulus
         return score
 
