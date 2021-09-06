@@ -63,7 +63,7 @@ class KGEModel(nn.Module):
         self.modulus = nn.Parameter(torch.Tensor([[0.5 * self.embedding_range.item()]]))
 
         # Do not forget to modify this line when you add a new model in the "forward" function
-        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'Ring', 'Ellipse', 'Ellipse_sqrd',
+        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'Ring', 'Ellipse', 'Ellipse3_sqrd',
                               'Ellipse3']:
             raise ValueError('model %s not supported' % model_name)
 
@@ -161,7 +161,7 @@ class KGEModel(nn.Module):
             'Ring': self.Ring,
             'Ellipse': self.Ellipse,
             'Ellipse3': self.Ellipse3,
-            'Ellipse_sqrd': self.Ellipse_sqrd
+            'Ellipse3_sqrd': self.Ellipse3_sqrd
         }
 
         if self.model_name in model_func:
@@ -336,25 +336,26 @@ class KGEModel(nn.Module):
         score = self.gamma.item() - xy.sum(dim=2) * 0.008
         return score
 
-    def Ellipse_sqrd(self, head, relation, tail, mode):
+    def Ellipse3_sqrd(self, head, relation, tail, mode):
         pi = 3.14159262358979323846
         phase_r = relation / (self.embedding_range.item() / pi)
         phase_h = head / (self.embedding_range.item() / pi)
         phase_t = tail / (self.embedding_range.item() / pi)
 
-        r1, r2 = torch.chunk(phase_r, 2, dim=2)
+        r1, r2, r3 = torch.chunk(phase_r, 3, dim=2)
         hr = phase_h + r1
         tr = phase_t + r2
 
-        x = 1 + (torch.cos(hr)) * 0.9
-        y = 1 + (torch.cos(tr)) * 0.9
+        x = 1 + (torch.cos(hr)) * 0.1
+        y = 1 + (torch.cos(tr)) * 0.1
         #
         # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
         # xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(hr - tr)
-        a = x * torch.cos(hr) - y * torch.cos(tr)
-        b = x * torch.sin(hr) - y * torch.sin(tr)
+
+        a = x * torch.cos(phase_h + r3) - y * torch.cos(phase_t)
+        b = x * torch.sin(phase_h + r3) - y * torch.sin(phase_t)
         score = torch.stack([a, b], dim=0)
         score = score.norm(dim=0)
         score = self.gamma.item() - score.sum(dim=2) * self.modulus
