@@ -73,21 +73,28 @@ class TrainDataset(Dataset):
 
         if self.mode == 'head-batch':
             positive_entity = tail
+            replaced_entity = head
         elif self.mode == 'tail-batch':
             positive_entity = head
+            replaced_entity = tail
 
-        positive_sample = torch.LongTensor(positive_sample)
+        # positive_sample = torch.LongTensor(positive_sample)
+        positive_entity = torch.LongTensor(positive_entity)
+        replaced_entity = torch.LongTensor(replaced_entity)
+        relation = torch.LongTensor(relation)
 
-        return positive_sample, negative_sample, subsampling_weight, self.mode, sign
+        return positive_entity, replaced_entity, relation, negative_sample, subsampling_weight, sign, self.mode
 
     @staticmethod
     def collate_fn(data):
-        positive_sample = torch.stack([_[0] for _ in data], dim=0)
-        negative_sample = torch.stack([_[1] for _ in data], dim=0)
-        subsample_weight = torch.cat([_[2] for _ in data], dim=0)
-        mode = data[0][3]
-        sign = torch.cat([_[4] for _ in data], dim=0)
-        return positive_sample, negative_sample, subsample_weight, mode, sign
+        positivE = torch.cat([_[0] for _ in data], dim=0)
+        replaceE = torch.cat([_[1] for _ in data], dim=0)
+        relation = torch.cat([_[2] for _ in data], dim=0)
+        negative_sample = torch.stack([_[3] for _ in data], dim=0)
+        subsampling_weight = torch.cat([_[4] for _ in data], dim=0)
+        sign = torch.cat([_[5] for _ in data], dim=0)
+        mode = data[0][6]
+        return positivE, replaceE, relation, negative_sample, subsampling_weight, sign, mode
 
     @staticmethod
     def count_frequency(triples, start=4):
@@ -311,11 +318,11 @@ class TestDataset(Dataset):
 
         if self.mode == 'head-batch':
             tmp = [(0, rand_head) if (rand_head, relation, tail) not in self.triple_set
-                   else (-1, head) for rand_head in range(self.nentity)]
+                   else (-100, head) for rand_head in range(self.nentity)]
             tmp[head] = (0, head)
         elif self.mode == 'tail-batch':
             tmp = [(0, rand_tail) if (head, relation, rand_tail) not in self.triple_set
-                   else (-1, tail) for rand_tail in range(self.nentity)]
+                   else (-100, tail) for rand_tail in range(self.nentity)]
             tmp[tail] = (0, tail)
         else:
             raise ValueError('negative batch mode %s not supported' % self.mode)

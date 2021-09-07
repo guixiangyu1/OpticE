@@ -73,7 +73,7 @@ class KGEModel(nn.Module):
         if model_name == 'ComplEx' and (not double_entity_embedding or not double_relation_embedding):
             raise ValueError('ComplEx should use --double_entity_embedding and --double_relation_embedding')
 
-    def forward(self, sample, mode='single'):
+    def forward(self, fixedE, relation, dynamicE, sign, mode='single'):
         '''
         Forward function that calculate the score of a batch of triples.
         In the 'single' mode, sample is a batch of triple.
@@ -85,24 +85,24 @@ class KGEModel(nn.Module):
         '''
 
         if mode == 'single':
-            batch_size, negative_sample_size = sample.size(0), 1
+            # batch_size, negative_sample_size = sample.size(0), 1
 
             head = torch.index_select(
                 self.entity_embedding,
                 dim=0,
-                index=sample[:, 0]
+                index=fixedE
             ).unsqueeze(1)
 
             relation = torch.index_select(
                 self.relation_embedding,
                 dim=0,
-                index=sample[:, 1]
+                index=relation
             ).unsqueeze(1)
 
             tail = torch.index_select(
                 self.entity_embedding,
                 dim=0,
-                index=sample[:, 2]
+                index=dynamicE
             ).unsqueeze(1)
 
         elif mode == 'head-batch':
@@ -394,14 +394,17 @@ class KGEModel(nn.Module):
 
         optimizer.zero_grad()
 
-        positive_sample, negative_sample, subsampling_weight, mode = next(train_iterator)
+        positivE, replaceE, relation, negative_sample, subsampling_weight, sign, mode = next(train_iterator)
 
         if args.cuda:
-            positive_sample = positive_sample.cuda()
+            positivE = positivE.cuda()
+            replaceE = replaceE.cuda()
+            relation = relation.cuda()
             negative_sample = negative_sample.cuda()
             subsampling_weight = subsampling_weight.cuda()
+            sign = sign.cuda()
 
-        negative_score = model((positive_sample, negative_sample), mode=mode)
+        negative_score = model(positivE, relation, negative_sample, sign, mode=mode)
 
         if args.negative_adversarial_sampling:
             # In self-adversarial sampling, we do not apply back-propagation on the sampling weight
