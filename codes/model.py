@@ -84,10 +84,12 @@ class KGEModel(nn.Module):
         in their triple ((head, relation) or (relation, tail)).
         '''
 
+        sign = sign.reshape(-1, 1, 1)
+
         if mode == 'single':
             # batch_size, negative_sample_size = sample.size(0), 1
 
-            head = torch.index_select(
+            fixedE = torch.index_select(
                 self.entity_embedding,
                 dim=0,
                 index=fixedE
@@ -99,55 +101,55 @@ class KGEModel(nn.Module):
                 index=relation
             ).unsqueeze(1)
 
-            tail = torch.index_select(
+            dynamicE = torch.index_select(
                 self.entity_embedding,
                 dim=0,
                 index=dynamicE
             ).unsqueeze(1)
 
-        elif mode == 'head-batch':
-            tail_part, head_part = sample
-            batch_size, negative_sample_size = head_part.size(0), head_part.size(1)
+        elif mode == 'multi':
+            # tail_part, head_part = sample
+            batch_size, negative_sample_size = dynamicE.size(0), dynamicE.size(1)
 
-            head = torch.index_select(
+            dynamicE = torch.index_select(
                 self.entity_embedding,
                 dim=0,
-                index=head_part.view(-1)
+                index=dynamicE.view(-1)
             ).view(batch_size, negative_sample_size, -1)
 
             relation = torch.index_select(
                 self.relation_embedding,
                 dim=0,
-                index=tail_part[:, 1]
+                index=relation
             ).unsqueeze(1)
 
-            tail = torch.index_select(
+            fixedE = torch.index_select(
                 self.entity_embedding,
                 dim=0,
-                index=tail_part[:, 2]
+                index=fixedE
             ).unsqueeze(1)
 
-        elif mode == 'tail-batch':
-            head_part, tail_part = sample
-            batch_size, negative_sample_size = tail_part.size(0), tail_part.size(1)
-
-            head = torch.index_select(
-                self.entity_embedding,
-                dim=0,
-                index=head_part[:, 0]
-            ).unsqueeze(1)
-
-            relation = torch.index_select(
-                self.relation_embedding,
-                dim=0,
-                index=head_part[:, 1]
-            ).unsqueeze(1)
-
-            tail = torch.index_select(
-                self.entity_embedding,
-                dim=0,
-                index=tail_part.view(-1)
-            ).view(batch_size, negative_sample_size, -1)
+        # elif mode == 'tail-batch':
+        #     # head_part, tail_part = sample
+        #     batch_size, negative_sample_size = tail_part.size(0), tail_part.size(1)
+        #
+        #     head = torch.index_select(
+        #         self.entity_embedding,
+        #         dim=0,
+        #         index=head_part[:, 0]
+        #     ).unsqueeze(1)
+        #
+        #     relation = torch.index_select(
+        #         self.relation_embedding,
+        #         dim=0,
+        #         index=head_part[:, 1]
+        #     ).unsqueeze(1)
+        #
+        #     tail = torch.index_select(
+        #         self.entity_embedding,
+        #         dim=0,
+        #         index=tail_part.view(-1)
+        #     ).view(batch_size, negative_sample_size, -1)
 
         else:
             raise ValueError('mode %s not supported' % mode)
@@ -165,7 +167,7 @@ class KGEModel(nn.Module):
         }
 
         if self.model_name in model_func:
-            score = model_func[self.model_name](head, relation, tail, mode)
+            score = model_func[self.model_name](fixedE, relation, dynamicE, sign, mode)
         else:
             raise ValueError('model %s not supported' % self.model_name)
 
@@ -316,23 +318,23 @@ class KGEModel(nn.Module):
         score = self.gamma.item() - xy.sum(dim=2) * self.modulus
         return score
 
-    def Ellipse3(self, head, relation, tail, mode):
+    def Ellipse3(self, fixedE, relation, dynamicE, sign, mode):
         pi = 3.14159262358979323846
         phase_r = relation / (self.embedding_range.item() / pi)
-        phase_h = head / (self.embedding_range.item() / pi)
-        phase_t = tail / (self.embedding_range.item() / pi)
+        fixedE = fixedE / (self.embedding_range.item() / pi)
+        dynamicE = dynamicE / (self.embedding_range.item() / pi)
 
         r1, r2, r3 = torch.chunk(phase_r, 3, dim=2)
-        hr = phase_h + r1
-        tr = phase_t + r2
+        fr = fixedE + r1
+        dr = dynamicE + r2
 
-        x = 1 + (torch.cos(hr)) * 0.1
-        y = 1 + (torch.cos(tr)) * 0.1
+        x = 1 + (torch.cos(fr)) * 0.1
+        y = 1 + (torch.cos(dr)) * 0.1
         #
         # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
-        xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(phase_h + r3 - phase_t)
+        xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(fixedE * sign + r3 + dynamicE)
         score = self.gamma.item() - xy.sum(dim=2) * 0.008
         return score
 
@@ -413,7 +415,7 @@ class KGEModel(nn.Module):
         else:
             negative_score = F.logsigmoid(-negative_score).mean(dim=1)
 
-        positive_score = model(positive_sample)
+        positive_score = model(positivE, relation, replaceE, sign)
 
         positive_score = F.logsigmoid(positive_score).squeeze(dim=1)
 

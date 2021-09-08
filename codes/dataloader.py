@@ -39,10 +39,10 @@ class TrainDataset(Dataset):
         roll = np.random.rand()
         if roll <= pr4head:
             self.mode = 'head-batch'
-            sign = torch.Tensor([1])
+            sign = torch.Tensor([-1])
         else:
             self.mode = 'tail-batch'
-            sign = torch.Tensor([-1])
+            sign = torch.Tensor([1])
 
         while negative_sample_size < self.negative_sample_size:
 
