@@ -522,24 +522,29 @@ class KGEModel(nn.Module):
 
             with torch.no_grad():
                 for test_dataset in test_dataset_list:
-                    for positive_sample, negative_sample, filter_bias, mode in test_dataset:
+                    for positivE, replaceE, relation, negative_sample, filter_bias, sign, mode\
+                            in test_dataset:
                         if args.cuda:
-                            positive_sample = positive_sample.cuda()
+                            positivE = positivE.cuda()
+                            replaceE = replaceE.cuda()
+                            relation = relation.cuda()
                             negative_sample = negative_sample.cuda()
+                            subsampling_weight = subsampling_weight.cuda()
+                            sign = sign.cuda()
                             filter_bias = filter_bias.cuda()
 
-                        batch_size = positive_sample.size(0)
+                        batch_size = positivE.size(0)
 
-                        score = model((positive_sample, negative_sample), mode)
+                        score = model(positivE, relation, negative_sample, sign, mode=mode)
                         score += filter_bias
 
                         # Explicitly sort all the entities to ensure that there is no test exposure bias
                         argsort = torch.argsort(score, dim=1, descending=True)
 
                         if mode == 'head-batch':
-                            positive_arg = positive_sample[:, 0]
+                            positive_arg = replaceE
                         elif mode == 'tail-batch':
-                            positive_arg = positive_sample[:, 2]
+                            positive_arg = replaceE
                         else:
                             raise ValueError('mode %s not supported' % mode)
 
