@@ -334,7 +334,7 @@ class KGEModel(nn.Module):
         # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
-        xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(fixedE * sign + r3 + dynamicE)
+        xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos((fixedE - dynamicE) * sign + r3)
         score = self.gamma.item() - xy.sum(dim=2) * 0.008
         return score
 
