@@ -76,9 +76,9 @@ class TrainDataset(Dataset):
         negative_sample = torch.from_numpy(negative_sample)
 
         # positive_sample = torch.LongTensor(positive_sample)
-        positive_entity = torch.LongTensor(positive_entity)
-        replaced_entity = torch.LongTensor(replaced_entity)
-        relation = torch.LongTensor(relation)
+        positive_entity = torch.LongTensor([positive_entity])
+        replaced_entity = torch.LongTensor([replaced_entity])
+        relation = torch.LongTensor([relation])
 
         return positive_entity, replaced_entity, relation, negative_sample, subsampling_weight, sign, self.mode
 
@@ -200,9 +200,9 @@ class TestDataset(Dataset):
         filter_bias = tmp[:, 0].float()
         negative_sample = tmp[:, 1]
 
-        positive_entity = torch.LongTensor(positive_entity)
-        replaced_entity = torch.LongTensor(replaced_entity)
-        relation = torch.LongTensor(relation)
+        positive_entity = torch.LongTensor([positive_entity])
+        replaced_entity = torch.LongTensor([replaced_entity])
+        relation = torch.LongTensor([relation])
 
         return positive_entity, replaced_entity, relation, negative_sample, filter_bias, sign, self.mode
 
