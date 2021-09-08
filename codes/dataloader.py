@@ -212,7 +212,7 @@ class TestDataset(Dataset):
         replaceE = torch.cat([_[1] for _ in data], dim=0)
         relation = torch.cat([_[2] for _ in data], dim=0)
         negative_sample = torch.stack([_[3] for _ in data], dim=0)
-        filter_bias = torch.cat([_[4] for _ in data], dim=0)
+        filter_bias = torch.stack([_[4] for _ in data], dim=0)
         sign = torch.cat([_[5] for _ in data], dim=0)
         mode = data[0][6]
         return positivE, replaceE, relation, negative_sample, filter_bias, sign, mode
