@@ -529,7 +529,6 @@ class KGEModel(nn.Module):
                             replaceE = replaceE.cuda()
                             relation = relation.cuda()
                             negative_sample = negative_sample.cuda()
-                            subsampling_weight = subsampling_weight.cuda()
                             sign = sign.cuda()
                             filter_bias = filter_bias.cuda()
 
