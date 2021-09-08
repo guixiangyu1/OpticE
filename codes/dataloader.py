@@ -49,16 +49,19 @@ class TrainDataset(Dataset):
             replaced_entity = tail
 
         while negative_sample_size < self.negative_sample_size:
+            roll = np.random.rand()
+            if roll <= pr4head:
+                negative_sample = np.random.randint(self.nentity)
+                while negative_sample in self.true_head[(relation, tail)]:
+                    negative_sample = np.random.randint(self.nentity)
+                self.mode = 'head-batch'
+                sign = torch.Tensor([-1])
+                positive_entity = tail
+                replaced_entity = head
+                negative_sample_list.append(negative_sample)
 
-            negative_sample = np.random.randint(self.nentity, size=self.negative_sample_size * 2)
-            if self.mode == 'head-batch':
-                mask = np.in1d(
-                    negative_sample,
-                    self.true_head[(relation, tail)],
-                    assume_unique=True,
-                    invert=True
-                )
-            elif self.mode == 'tail-batch':
+            else:
+                negative_sample = np.random.randint(self.nentity)
                 mask = np.in1d(
                     negative_sample,
                     self.true_tail[(head, relation)],
