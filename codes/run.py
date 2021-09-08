@@ -243,7 +243,7 @@ def main(args):
     if args.do_train:
         # Set training dataloader iterator
         train_dataloader = DataLoader(
-            TrainDataset(train_triples, nentity, nrelation, args.negative_sample_size, 'tail-batch'),
+            TrainDataset(train_triples, nentity, nrelation, args.negative_sample_size, 'unknown'),
             batch_size=args.batch_size,
             shuffle=True,
             num_workers=max(1, args.cpu_num // 2),
