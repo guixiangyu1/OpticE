@@ -40,9 +40,13 @@ class TrainDataset(Dataset):
         if roll <= pr4head:
             self.mode = 'head-batch'
             sign = torch.Tensor([-1])
+            positive_entity = tail
+            replaced_entity = head
         else:
             self.mode = 'tail-batch'
             sign = torch.Tensor([1])
+            positive_entity = head
+            replaced_entity = tail
 
         while negative_sample_size < self.negative_sample_size:
 
@@ -70,13 +74,6 @@ class TrainDataset(Dataset):
         negative_sample = np.concatenate(negative_sample_list)[:self.negative_sample_size]
 
         negative_sample = torch.from_numpy(negative_sample)
-
-        if self.mode == 'head-batch':
-            positive_entity = tail
-            replaced_entity = head
-        elif self.mode == 'tail-batch':
-            positive_entity = head
-            replaced_entity = tail
 
         # positive_sample = torch.LongTensor(positive_sample)
         positive_entity = torch.LongTensor(positive_entity)
@@ -203,7 +200,9 @@ class TestDataset(Dataset):
         filter_bias = tmp[:, 0].float()
         negative_sample = tmp[:, 1]
 
-        positive_sample = torch.LongTensor((head, relation, tail))
+        positive_entity = torch.LongTensor(positive_entity)
+        replaced_entity = torch.LongTensor(replaced_entity)
+        relation = torch.LongTensor(relation)
 
         return positive_entity, replaced_entity, relation, negative_sample, filter_bias, sign, self.mode
 
