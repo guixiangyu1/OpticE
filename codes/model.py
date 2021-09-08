@@ -107,7 +107,7 @@ class KGEModel(nn.Module):
                 index=dynamicE
             ).unsqueeze(1)
 
-        elif mode == 'multi':
+        elif mode == 'head-batch' or mode == 'tail-batch':
             # tail_part, head_part = sample
             batch_size, negative_sample_size = dynamicE.size(0), dynamicE.size(1)
 
