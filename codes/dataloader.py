@@ -136,11 +136,11 @@ class TestDataset(Dataset):
 
         if self.mode == 'head-batch':
             tmp = [(0, rand_head) if (rand_head, relation, tail) not in self.triple_set
-                   else (-1, head) for rand_head in range(self.nentity)]
+                   else (-100, head) for rand_head in range(self.nentity)]
             tmp[head] = (0, head)
         elif self.mode == 'tail-batch':
             tmp = [(0, rand_tail) if (head, relation, rand_tail) not in self.triple_set
-                   else (-1, tail) for rand_tail in range(self.nentity)]
+                   else (-100, tail) for rand_tail in range(self.nentity)]
             tmp[tail] = (0, tail)
         else:
             raise ValueError('negative batch mode %s not supported' % self.mode)

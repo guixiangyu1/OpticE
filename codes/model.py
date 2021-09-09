@@ -326,14 +326,14 @@ class KGEModel(nn.Module):
         hr = phase_h + r1
         tr = phase_t + r2
 
-        x = 1 + (torch.cos(hr)) * 0.1
-        y = 1 + (torch.cos(tr)) * 0.1
+        x = 1 + (torch.cos(hr)) * 0.9
+        y = 1 + (torch.cos(tr)) * 0.9
         #
         # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
         xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(phase_h + r3 - phase_t)
-        score = self.gamma.item() - xy.sum(dim=2) * 0.008
+        score = self.gamma.item() - xy.sum(dim=2) * self.modulus
         return score
 
     def Ellipse3_sqrt(self, head, relation, tail, mode):
