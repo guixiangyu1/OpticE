@@ -10,7 +10,7 @@ import torch
 from torch.utils.data import Dataset
 
 class TrainDataset(Dataset):
-    def __init__(self, triples, nentity, nrelation, negative_sample_size, mode):
+    def __init__(self, triples, nentity, nrelation, negative_sample_size, mode, step):
         self.len = len(triples)
         self.triples = triples
         self.triple_set = set(triples)
@@ -20,6 +20,7 @@ class TrainDataset(Dataset):
         self.mode = mode
         self.count = self.count_frequency(triples)
         self.true_head, self.true_tail, self.tph, self.hpt = self.get_true_head_and_tail(self.triples)
+        self.step = step
 
     def __len__(self):
         return self.len
@@ -60,7 +61,7 @@ class TrainDataset(Dataset):
                 replaced_entity = head
                 negative_sample_list.append(negative_sample)
 
-            else:
+            elif 1==1:
                 negative_sample = np.random.randint(self.nentity)
                 mask = np.in1d(
                     negative_sample,
