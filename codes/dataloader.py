@@ -27,6 +27,7 @@ class TrainDataset(Dataset):
         return self.len
 
     def __getitem__(self, idx):
+        thre = 2
         positive_sample = self.triples[idx]
 
         head, relation, tail = positive_sample
@@ -39,22 +40,34 @@ class TrainDataset(Dataset):
         if self.hpt[relation] < self.tph[relation]:
             freq = 1 + self.tph[relation] / self.hpt[relation]
             freq = math.floor(freq)
-            if freq > 4:
-                freq = 4
+            if freq > thre:
+                freq = thre
             if self.step % freq == 0:
                 self.mode = 'head-batch'
                 sign = torch.Tensor([-1])
                 positive_entity = tail
                 replaced_entity = head
+            else:
+                self.mode = 'tail-batch'
+                sign = torch.Tensor([1])
+                positive_entity = head
+                replaced_entity = tail
+
         else:
             freq = 1 + self.hpt[relation] / self.tph[relation]
             freq = math.floor(freq)
-            if freq > 4:
-                freq = 4
-            self.mode = 'tail-batch'
-            sign = torch.Tensor([1])
-            positive_entity = head
-            replaced_entity = tail
+            if freq > thre:
+                freq = thre
+            if self.step % freq == 0:
+                self.mode = 'tail-batch'
+                sign = torch.Tensor([1])
+                positive_entity = head
+                replaced_entity = tail
+            else:
+                self.mode = 'head-batch'
+                sign = torch.Tensor([-1])
+                positive_entity = tail
+                replaced_entity = head
 
         negative_sample_list = []
         negative_sample_size = 0
@@ -229,14 +242,18 @@ class TestDataset(Dataset):
 
 
 class BidirectionalOneShotIterator(object):
-    def __init__(self, dataloader):
-        self.iterator = self.one_shot_iterator(dataloader)
-        # self.iterator_tail = self.one_shot_iterator(dataloader_tail)
+    def __init__(self, dataloader1, dataloader2):
+        self.iterator1 = self.one_shot_iterator(dataloader1)
+        self.iterator2 = self.one_shot_iterator(dataloader2)
         self.step = 0
 
     def __next__(self):
         self.step += 1
-        data = next(self.iterator)
+        if self.step % 2 == 1:
+            data = next(self.iterator1)
+        else:
+            assert self.step % 2 == 0
+            data = next(self.iterator2)
         return data
 
     @staticmethod
