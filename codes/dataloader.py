@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import torch
+import math
 
 from torch.utils.data import Dataset
 
@@ -33,17 +34,23 @@ class TrainDataset(Dataset):
         subsampling_weight = self.count[(head, relation)] + self.count[(tail, -relation - 1)]
         subsampling_weight = torch.sqrt(1 / torch.Tensor([subsampling_weight]))
 
-        negative_sample_list = []
-        negative_sample_size = 0
+        # pr4head = self.tph[relation] / (self.hpt[relation] + self.tph[relation])
 
-        pr4head = self.tph[relation] / (self.hpt[relation] + self.tph[relation])
-        roll = np.random.rand()
-        if roll <= pr4head:
-            self.mode = 'head-batch'
-            sign = torch.Tensor([-1])
-            positive_entity = tail
-            replaced_entity = head
+        if self.hpt[relation] < self.tph[relation]:
+            freq = 1 + self.tph[relation] / self.hpt[relation]
+            freq = math.floor(freq)
+            if freq > 4:
+                freq = 4
+            if self.step % freq == 0:
+                self.mode = 'head-batch'
+                sign = torch.Tensor([-1])
+                positive_entity = tail
+                replaced_entity = head
         else:
+            freq = 1 + self.hpt[relation] / self.tph[relation]
+            freq = math.floor(freq)
+            if freq > 4:
+                freq = 4
             self.mode = 'tail-batch'
             sign = torch.Tensor([1])
             positive_entity = head
@@ -51,7 +58,7 @@ class TrainDataset(Dataset):
 
         while negative_sample_size < self.negative_sample_size:
             roll = np.random.rand()
-            if roll <= pr4head:
+            if self.mode == 'head-batch':
                 negative_sample = np.random.randint(self.nentity)
                 while negative_sample in self.true_head[(relation, tail)]:
                     negative_sample = np.random.randint(self.nentity)
