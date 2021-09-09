@@ -242,23 +242,23 @@ def main(args):
 
     if args.do_train:
         # Set training dataloader iterator
-        train_dataloader = DataLoader(
-            TrainDataset(train_triples, nentity, nrelation, args.negative_sample_size, 'unknown'),
+        train_dataloader1 = DataLoader(
+            TrainDataset(train_triples, nentity, nrelation, args.negative_sample_size, 'unknown', 1),
             batch_size=args.batch_size,
             shuffle=True,
             num_workers=max(1, args.cpu_num // 2),
             collate_fn=TrainDataset.collate_fn
         )
 
-        # train_dataloader_tail = DataLoader(
-        #     TrainDataset(train_triples, nentity, nrelation, args.negative_sample_size, 'tail-batch'),
-        #     batch_size=args.batch_size,
-        #     shuffle=True,
-        #     num_workers=max(1, args.cpu_num // 2),
-        #     collate_fn=TrainDataset.collate_fn
-        # )
+        train_dataloader2 = DataLoader(
+            TrainDataset(train_triples, nentity, nrelation, args.negative_sample_size, 'unknown', 2),
+            batch_size=args.batch_size,
+            shuffle=True,
+            num_workers=max(1, args.cpu_num // 2),
+            collate_fn=TrainDataset.collate_fn
+        )
 
-        train_iterator = BidirectionalOneShotIterator(train_dataloader)
+        train_iterator = BidirectionalOneShotIterator(train_dataloader1, train_dataloader2)
 
         # Set training configuration
         current_learning_rate = args.learning_rate
@@ -283,7 +283,7 @@ def main(args):
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     else:
         logging.info('Ramdomly Initializing %s Model...' % args.model)
-        init_step = 0
+        init_step = 1
 
     step = init_step
 
