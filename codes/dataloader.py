@@ -36,7 +36,10 @@ class TrainDataset(Dataset):
         negative_sample_size = 0
 
         pr4head = self.tph[relation] / (self.hpt[relation] + self.tph[relation])
-        pr4head = 0.5
+        if pr4head < 0.4:
+            pr4head = 0.4
+        elif pr4head > 0.6:
+            pr4head = 0.6
         roll = np.random.rand()
         if roll <= pr4head:
             self.mode = 'head-batch'
