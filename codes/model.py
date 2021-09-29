@@ -328,39 +328,35 @@ class KGEModel(nn.Module):
         fr = fixedE + (r1 * (1 + sign) + r2 * (1 - sign)) * 0.5
         dr = dynamicE + (r2 * (1 + sign) + r1 * (1 - sign)) * 0.5
 
-        x = 1 + (torch.cos(fr)) * 0.9
-        y = 1 + (torch.cos(dr)) * 0.9
+        x = 1 + (torch.cos(fr)) * 0.1
+        y = 1 + (torch.cos(dr)) * 0.1
         #
         # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
         xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos((fixedE - dynamicE) * sign + r3)
-        score = self.gamma.item() - xy.sum(dim=2) * self.modulus
+        score = self.gamma.item() - xy.sum(dim=2) * 0.0027
         return score
 
-    def Ellipse3_sqrt(self, head, relation, tail, mode):
+
+    def Ellipse3_sqrt(self, fixedE, relation, dynamicE, sign, mode):
         pi = 3.14159262358979323846
         phase_r = relation / (self.embedding_range.item() / pi)
-        phase_h = head / (self.embedding_range.item() / pi)
-        phase_t = tail / (self.embedding_range.item() / pi)
+        fixedE = fixedE / (self.embedding_range.item() / pi)
+        dynamicE = dynamicE / (self.embedding_range.item() / pi)
 
         r1, r2, r3 = torch.chunk(phase_r, 3, dim=2)
-        hr = phase_h + r1
-        tr = phase_t + r2
+        fr = fixedE + (r1 * (1 + sign) + r2 * (1 - sign)) * 0.5
+        dr = dynamicE + (r2 * (1 + sign) + r1 * (1 - sign)) * 0.5
 
-        x = 1 + (torch.cos(hr)) * 0.1
-        y = 1 + (torch.cos(tr)) * 0.1
+        x = 1 + (torch.cos(fr)) * 0.1
+        y = 1 + (torch.cos(dr)) * 0.1
         #
         # x = 1 / (1 - 0.8 * torch.cos(hr) ** 2)
         # y = 1 / (1 - 0.8 * torch.cos(tr) ** 2)
 
-        # xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos(hr - tr)
-
-        a = x * torch.cos(phase_h + r3) - y * torch.cos(phase_t)
-        b = x * torch.sin(phase_h + r3) - y * torch.sin(phase_t)
-        score = torch.stack([a, b], dim=0)
-        score = score.norm(dim=0)
-        score = self.gamma.item() - score.sum(dim=2) * self.modulus
+        xy = x ** 1.6 + y ** 1.6 - 2 * ((x * y + 0.0000000001) ** 0.8) * torch.cos((fixedE - dynamicE) * sign + r3)
+        score = self.gamma.item() - xy.sum(dim=2) * 0.008
         return score
 
     def pEllipse(self, head, relation, tail, mode):
