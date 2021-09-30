@@ -449,7 +449,7 @@ class KGEModel(nn.Module):
         return log
 
     @staticmethod
-    def test_step(model, test_triples, all_true_triples, args):
+    def test_step(model, test_triples, all_true_triples, args, hpt, tph):
         '''
         Evaluate the model on test or valid datasets
         '''
@@ -509,9 +509,13 @@ class KGEModel(nn.Module):
                 collate_fn=TestDataset.collate_fn
             )
 
-            test_dataset_list = [test_dataloader_head, test_dataloader_tail]
-
+            # test_dataset_list = [test_dataloader_head, test_dataloader_tail]
+            test_dataset_list = [test_dataloader_tail]
             logs = []
+            OnetoOne = []
+            OnetoMany = []
+            ManytoOne = []
+            ManytoMany = []
 
             step = 0
             total_steps = sum([len(dataset) for dataset in test_dataset_list])
@@ -550,6 +554,9 @@ class KGEModel(nn.Module):
 
                             # ranking + 1 is the true ranking used in evaluation metrics
                             ranking = 1 + ranking.item()
+
+                            Rid = int(relation[i])
+
                             logs.append({
                                 'MRR': 1.0 / ranking,
                                 'MR': float(ranking),
@@ -557,6 +564,44 @@ class KGEModel(nn.Module):
                                 'HITS@3': 1.0 if ranking <= 3 else 0.0,
                                 'HITS@10': 1.0 if ranking <= 10 else 0.0,
                             })
+
+
+
+                            if hpt[Rid] <= 1.5 and tph[Rid] <= 1.5:
+                                # print('%s: 1-1' % relation)
+                                OnetoOne.append({
+                                'MRR': 1.0 / ranking,
+                                'MR': float(ranking),
+                                'HITS@1': 1.0 if ranking <= 1 else 0.0,
+                                'HITS@3': 1.0 if ranking <= 3 else 0.0,
+                                'HITS@10': 1.0 if ranking <= 10 else 0.0,
+                            })
+                            elif hpt[Rid] <= 1.5 and tph[Rid] > 1.5:
+                                OnetoMany.append({
+                                'MRR': 1.0 / ranking,
+                                'MR': float(ranking),
+                                'HITS@1': 1.0 if ranking <= 1 else 0.0,
+                                'HITS@3': 1.0 if ranking <= 3 else 0.0,
+                                'HITS@10': 1.0 if ranking <= 10 else 0.0,
+                            })
+                            elif hpt[Rid] > 1.5 and tph[Rid] <= 1.5:
+                                ManytoOne.append({
+                                'MRR': 1.0 / ranking,
+                                'MR': float(ranking),
+                                'HITS@1': 1.0 if ranking <= 1 else 0.0,
+                                'HITS@3': 1.0 if ranking <= 3 else 0.0,
+                                'HITS@10': 1.0 if ranking <= 10 else 0.0,
+                            })
+                            elif hpt[Rid] > 1.5 and tph[Rid] > 1.5:
+                                ManytoMany.append({
+                                'MRR': 1.0 / ranking,
+                                'MR': float(ranking),
+                                'HITS@1': 1.0 if ranking <= 1 else 0.0,
+                                'HITS@3': 1.0 if ranking <= 3 else 0.0,
+                                'HITS@10': 1.0 if ranking <= 10 else 0.0,
+                            })
+
+
 
                         if step % args.test_log_steps == 0:
                             logging.info('Evaluating the model... (%d/%d)' % (step, total_steps))
@@ -567,4 +612,24 @@ class KGEModel(nn.Module):
             for metric in logs[0].keys():
                 metrics[metric] = sum([log[metric] for log in logs]) / len(logs)
 
-        return metrics
+            # print('------------ONETOONE----------------------')
+            OnetoOne_metrics = {}
+            for metric in OnetoOne[0].keys():
+                OnetoOne_metrics[metric] = sum([log[metric] for log in OnetoOne]) / len(OnetoOne)
+
+            # print('------------ONETOMANY----------------------')
+            OnetoMany_metrics = {}
+            for metric in OnetoMany[0].keys():
+                OnetoMany_metrics[metric] = sum([log[metric] for log in OnetoMany]) / len(OnetoMany)
+
+            # print('------------MANYTOONE----------------------')
+            ManytoOne_metrics = {}
+            for metric in ManytoOne[0].keys():
+                ManytoOne_metrics[metric] = sum([log[metric] for log in ManytoOne]) / len(ManytoOne)
+
+            # print('------------MANYTOMANY----------------------')
+            ManytoMany_metrics = {}
+            for metric in ManytoMany[0].keys():
+                ManytoMany_metrics[metric] = sum([log[metric] for log in ManytoMany]) / len(ManytoMany)
+
+            return metrics, OnetoOne_metrics, OnetoMany_metrics, ManytoOne_metrics, ManytoMany_metrics

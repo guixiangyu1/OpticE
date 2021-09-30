@@ -163,6 +163,57 @@ def log_metrics(mode, step, metrics):
         logging.info('%s %s at step %d: %f' % (mode, metric, step, metrics[metric]))
 
 
+
+def get_true_head_and_tail(triples):
+    '''
+    Build a dictionary of true triples that will
+    be used to filter these true triples for negative sampling
+    '''
+
+    true_head = {}
+    true_tail = {}
+    tph = {}
+    hpt = {}
+    head_num = {}
+    tail_num = {}
+
+    for head, relation, tail in triples:
+        if (head, relation) not in true_tail:
+            true_tail[(head, relation)] = []
+        true_tail[(head, relation)].append(tail)
+        if (relation, tail) not in true_head:
+            true_head[(relation, tail)] = []
+        true_head[(relation, tail)].append(head)
+
+    for relation, tail in true_head:
+        true_head[(relation, tail)] = np.array(list(set(true_head[(relation, tail)])))
+    for head, relation in true_tail:
+        true_tail[(head, relation)] = np.array(list(set(true_tail[(head, relation)])))
+
+    # calculate hpt and tph
+    for head, relation in true_tail:
+        if relation not in head_num:
+            head_num[relation] = 0
+            tail_num[relation] = 0
+        head_num[relation] += 1
+        tail_num[relation] += len(true_tail[(head, relation)])
+    for relation in head_num:
+        tph[relation] = tail_num[relation] / head_num[relation]
+
+    head_num = {}
+    tail_num = {}
+    for relation, tail in true_head:
+        if relation not in tail_num:
+            tail_num[relation] = 0
+            head_num[relation] = 0
+        head_num[relation] += len(true_head[(relation, tail)])
+        tail_num[relation] += 1
+    for relation in tail_num:
+        hpt[relation] = head_num[relation] / tail_num[relation]
+
+    return true_head, true_tail, tph, hpt
+
+
 def main(args):
     if (not args.do_train) and (not args.do_valid) and (not args.do_test):
         raise ValueError('one of train/val/test mode must be choosed.')
@@ -222,6 +273,19 @@ def main(args):
 
     # All true triples
     all_true_triples = train_triples + valid_triples + test_triples
+
+    # get hpt and tph
+    _, _, tph, hpt = get_true_head_and_tail(train_triples)
+    # for relation in relation2id:
+    #     id = relation2id[relation]
+    #     if hpt[id] <= 1.5 and tph[id] <= 1.5:
+    #         print('%s: 1-1' % relation)
+    #     elif hpt[id] <= 1.5 and tph[id] > 1.5:
+    #         print('%s: 1-n' % relation)
+    #     elif hpt[id] > 1.5 and tph[id] <= 1.5:
+    #         print('%s: n-1' % relation)
+    #     elif hpt[id] > 1.5 and tph[id] > 1.5:
+    #         print('%s: n-n' % relation)
 
     kge_model = KGEModel(
         model_name=args.model,
@@ -353,14 +417,34 @@ def main(args):
         log_metrics('Valid', step, metrics)
 
     if args.do_test:
+
         logging.info('Evaluating on Test Dataset...')
-        metrics = kge_model.test_step(kge_model, test_triples, all_true_triples, args)
+        metrics, OnetoOne_metrics, OnetoMany_metrics, ManytoOne_metrics, ManytoMany_metrics = kge_model.test_step(kge_model, test_triples, all_true_triples, args, hpt, tph)
         log_metrics('Test', step, metrics)
 
-    if args.evaluate_train:
-        logging.info('Evaluating on Training Dataset...')
-        metrics = kge_model.test_step(kge_model, train_triples, all_true_triples, args)
-        log_metrics('Test', step, metrics)
+        print('------------ONETOONE----------------------')
+        log_metrics('Test', step, OnetoOne_metrics)
+        print('------------ONETOMANY----------------------')
+        log_metrics('Test', step, OnetoMany_metrics)
+        print('------------MANYTOONE----------------------')
+        log_metrics('Test', step, ManytoOne_metrics)
+        print('------------MANYTOMANY----------------------')
+        log_metrics('Test', step, ManytoMany_metrics)
+
+
+    # if args.evaluate_train:
+    #     logging.info('Evaluating on Training Dataset...')
+    #     metrics, OnetoOne_metrics, OnetoMany_metrics, ManytoOne_metrics, ManytoMany_metrics = kge_model.test_step(kge_model, train_triples, all_true_triples, args)
+    #     log_metrics('Test', step, metrics)
+    #
+    #     print('------------ONETOONE----------------------')
+    #     log_metrics('Test', step, OnetoOne_metrics)
+    #     print('------------ONETOMANY----------------------')
+    #     log_metrics('Test', step, OnetoMany_metrics)
+    #     print('------------MANYTOONE----------------------')
+    #     log_metrics('Test', step, ManytoOne_metrics)
+    #     print('------------MANYTOMANY----------------------')
+    #     log_metrics('Test', step, ManytoMany_metrics)
 
 
 if __name__ == '__main__':
