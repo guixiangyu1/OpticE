@@ -290,7 +290,7 @@ def main(args):
     logging.info('Start Training...')
     logging.info('init_step = %d' % init_step)
     logging.info('batch_size = %d' % args.batch_size)
-    logging.info('negative_adversarial_sampling = %d' % args.negative_adversarial_sampling)
+    logging.info('negative_sample_size = %d' % args.negative_sample_size)
     logging.info('hidden_dim = %d' % args.hidden_dim)
     logging.info('gamma = %f' % args.gamma)
     logging.info('negative_adversarial_sampling = %s' % str(args.negative_adversarial_sampling))
@@ -300,7 +300,7 @@ def main(args):
     # Set valid dataloader as it would be evaluated during training
 
     if args.do_train:
-        logging.info('learning_rate = %d' % current_learning_rate)
+        logging.info('learning_rate = %f' % current_learning_rate)
 
         training_logs = []
 
