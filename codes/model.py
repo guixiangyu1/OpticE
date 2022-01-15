@@ -64,7 +64,7 @@ class KGEModel(nn.Module):
 
         # Do not forget to modify this line when you add a new model in the "forward" function
         if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'Ring', 'Ellipse', 'Ellipse3_sqrt',
-                              'Ellipse3']:
+                              'Ellipse3', 'RotatE_bernadv']:
             raise ValueError('model %s not supported' % model_name)
 
         if model_name == 'RotatE' and (not double_entity_embedding or double_relation_embedding):
@@ -163,7 +163,8 @@ class KGEModel(nn.Module):
             'Ring': self.Ring,
             'Ellipse': self.Ellipse,
             'Ellipse3': self.Ellipse3,
-            'Ellipse3_sqrt': self.Ellipse3_sqrt
+            'Ellipse3_sqrt': self.Ellipse3_sqrt,
+            'RotatE_bernadv': self.RotatE_bernadv
         }
 
         if self.model_name in model_func:
@@ -336,6 +337,33 @@ class KGEModel(nn.Module):
 
         xy = x ** 2 + y ** 2 - 2 * x * y * torch.cos((fixedE - dynamicE) * sign + r3)
         score = self.gamma.item() - xy.sum(dim=2) * 0.011
+        return score
+
+    def RotatE_bernadv(self, fixedE, relation, dynamicE, sign, mode):
+        pi = 3.14159262358979323846
+
+        head = (fixedE * (1 + sign) + dynamicE * (1 - sign)) * 0.5
+        tail = (dynamicE * (1 + sign) + fixedE * (1 - sign)) * 0.5
+
+        re_head, im_head = torch.chunk(head, 2, dim=2)
+        re_tail, im_tail = torch.chunk(tail, 2, dim=2)
+
+        # Make phases of relations uniformly distributed in [-pi, pi]
+
+        phase_relation = relation / (self.embedding_range.item() / pi)
+
+        re_relation = torch.cos(phase_relation)
+        im_relation = torch.sin(phase_relation)
+
+        re_score = re_head * re_relation - im_head * im_relation
+        im_score = re_head * im_relation + im_head * re_relation
+        re_score = re_score - re_tail
+        im_score = im_score - im_tail
+
+        score = torch.stack([re_score, im_score], dim=0)
+        score = score.norm(dim=0)
+
+        score = self.gamma.item() - score.sum(dim=2)
         return score
 
 
